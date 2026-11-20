@@ -4,3 +4,4 @@ _build
 hidden# pixi environments
 .pixi/*
 !.pixi/config.toml
+pixi.lock
