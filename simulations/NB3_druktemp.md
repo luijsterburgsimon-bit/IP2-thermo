@@ -223,7 +223,19 @@ Schrijf een functie die de temperatuur van het gas in onze simulatie bepaalt:
 ```python tags=["NB3_tempfun"]
 def temperature(particles) -> float:
     temp = 0.0 
-    ### YOUR CODE HERE ###
+    
+    K_B = 1.380649e-23
+    f = 2 
+    
+    v2_avg = 0 
+    
+    for p in particles:
+        v2_avg += np.dot(p.v, p.v)
+
+    v2_avg /= len(particles)
+
+    temp = particles[0].m * v2_avg / (f * K_B)
+    
     return temp
 ```
 
@@ -246,13 +258,13 @@ create_particles(particles)
 for i in range(100):
     take_time_step(particles)
     # vastleggen van temperatuur per tijdstap
-    ### YOUR CODE HERE ###
+    temperatures[i] = temperature(particles)
 
 plt.figure()
-plt.xlabel('Time')
-plt.ylabel('Temperature')
+plt.xlabel('Time (s)')
+plt.ylabel('Temperature (K)')
 # plotten van tijd tegen temperatuur
-### YOUR CODE HERE ###
+plt.plot(times, temperatures)
 plt.show()
 ```
 
@@ -342,12 +354,23 @@ Wat zou je als verklaring hiervoor geven?
 
 <!-- #endregion -->
 
+**antwoord vraag 4**
+De druk is niet constant omdat het aantal botsingen met de wand per tijdstap varieert. Hierdoor verschilt de impulsoverdracht naar de wand telkens en ontstaan schommelingen in de druk. De gemiddelde druk blijft wel ongeveer gelijk.
+
 ```python tags=["NB3_plot_pres"]
 particles = []
 pressures = np.zeros(100, dtype=float)
 times = np.linspace(1, 100, 100)
 
-### YOUR CODE HERE ###
+create_particles(particles)
+
+print(type(pressure))
+print(pressure)
+pressures[i] = pressure
+
+for i in range(100):
+    take_time_step(particles)
+    pressures[i] = pressure 
 
 plt.figure()
 plt.xlabel('Time [step]')
@@ -360,7 +383,7 @@ plt.show()
 ```
 
 <!-- #region tags=[] -->
-## Verbeteren van code: middelen
+#### Verbeteren van code: middelen
 
 De grafiek voor de druk bestaat uit een achtergrond op de waarde 0 en daarop een serie scherpe pieken.
 Een piek komt overeen met een tijdstap waar er toevallig een atoom met de wanden botst.
@@ -375,9 +398,12 @@ Zet je initiële waarden weer terug.
 ```
 <!-- #endregion -->
 
-```python tags=[]
-### YOUR CODE HERE ###
+**antwoord vraag 5**
+Als het volume niet wordt vergroot terwijl het aantal deeltjes wordt verhoogd, neemt de dichtheid van het gas toe. De deeltjes botsen dan veel vaker met elkaar en met de wanden, waardoor de druk aanzienlijk groter wordt. Het experiment zou dan niet meer dezelfde situatie beschrijven de resultaten zijn niet goed vergelijkbaar met de oorspronkelijke simulatie.
 
+```python tags=[]
+N = 400
+BOX_SIZE_0 = 20.0
 ```
 
 Een goedkoper alternatief bestaat uit het middelen van de druk over de tijd.
@@ -425,7 +451,15 @@ times = np.linspace(1, N_steps, N_steps)
 
 create_particles(particles)
 
-### YOUR CODE HERE ###
+for i in range(N_steps):
+    take_time_step(particles)
+    pressures[i] = pressure
+
+plt.figure()
+plt.xlabel('Time [step]')
+plt.ylabel('Pressure [a.u.]')
+plt.plot(times, pressures, '-r')
+plt.show()
 
 ```
 
@@ -437,7 +471,7 @@ We kunnen de gevonden druk nu wel uitdrukken in SI-eenheden met behulp van de vo
 ```
 
 ```{solution} ex-druktemp-7
-### YOUR CODE HERE ###
+De druk wijkt af van 10 bar omdat de simulatie een vereenvoudigd 2D-model is met weinig deeltjes en geschaalde parameters. Het model beschrijft het gedrag van een gas redelijk goed, maar is niet nauwkeurig genoeg om de werkelijke druk van een fietsband exact te reproduceren. 
 ```
 
 
@@ -449,7 +483,13 @@ Leg op basis van de vormen die je ziet en de bijbehorende wiskunde uit dat dit e
 ```
 
 ```{solution} ex-druktemp-8
-### YOUR CODE HERE ###
+Het exponentieel voortschrijdendgemiddelde krijgt zijn naam omdat oudere meetwaarden steeds minder gewicht krijgen volgens een exponentiële factor $(1-\alpha)^n$.
+Uit:
+$P_i$ = $\alpha*P + \alpha *(1-\alpha)*P+(i-1)$
+
+volgt:
+$P_i = \alpha*P+\alpha*(1-\alpha)*P_(i-1) + \alpha*(1-\alpha)^2*P_(i-2),...$
+De gewichten nemen dus exponentieel af voor oudere meetwaarden. Het gemiddelde is voor voortschrijdend omdat bij iedere nieuwe tijdstap een nieuw gemiddelde wordt berekend met de nieuwste drukwaarde. 
 ```
 
 
@@ -479,7 +519,15 @@ Controleer of je uitkomst overeenkomt met de theorie en verifieer hiermee de cod
 ```
 
 ```python
-### YOUR CODE HERE ###
+v2_avg = np.mean([np.dot(p.v, p.v) for p in particles])
+
+A = BOX_SIZE_0**2
+
+P_theory = particles[0].m*len(particles)*v2_avg /(2*A)
+P_sim = np.mean(pressures)
+
+print(P_theory)
+print(P_sim)
 ```
 
 In [de formule voor de tweedimensionale druk](2d_pressure) kan je de structuur van de ideale gaswet herkennen. 
@@ -493,7 +541,19 @@ Herleid dezelfde formule af voor het driedimensionale geval. Laat zien welke rel
 
 ```{solution} ex-druktemp9b
 Geef hier de relatie tussen de constanten...
-### YOUR CODE HERE ###
+$P = (Nm(v^2))/3V$
+uit de kinetische gastheorie geldt ook:
+$1/2*m(v^2) = 3/2*k_BT$
+dus 
+$m(v^2) = 3k_BT$
+invullen geeft 
+$P = (N(3k_BT)/3V = Nk_BT/V$
+en dus 
+$PV = Nk_BT$
+vergelijk dit met de bekende ideale gaswet:
+$PV = nRT$
+hieruit volgt de relatie tussen de constanten:
+$R = N_Ak_B$
 ```
 
 
@@ -519,14 +579,61 @@ Je ziet dat de druk een statistisch bepaalde grootheid is die met de tijd variee
 ```
 
 ```python
-### YOUR CODE HERE ###
+particles = []
+N = 100
+
+pressures = np.zeros(N)
+
+create_particles(particles)
+
+for i in range(N):
+    take_time_step(particles)
+    pressures[i] = pressure
+
+plt.figure(figsize=(8,5))
+plt.hist(pressures, bins=50)
+plt.xlabel("Pressure")
+plt.ylabel("stappen")
+plt.title("Histogram of pressure waarden")
+plt.show()
+
+print("gemiddelde druk =", np.mean(pressures))
+print("standaardafwijking +", np.std(pressures))
+
 ```
 
 ```python
+particles = []
+N = 200
 
+pressures = np.zeros(N)
+
+create_particles(particles)
+
+for i in range(N):
+    take_time_step(particles)
+    pressures[i] = pressure
+
+plt.figure(figsize=(8,5))
+plt.hist(pressures, bins=50)
+plt.xlabel("Pressure")
+plt.ylabel("stappen")
+plt.title("Histogram of pressure waarden")
+plt.show()
+
+print("gemiddelde druk =", np.mean(pressures))
+print("standaardafwijking +", np.std(pressures))
 
 
 ```
+
+**antwoord vraag 12:**
+Het histogram laat zien dat de druk een statistische grootheid is die rond een gemiddelde waarde fluctueert. De spreiding wordt beschreven met de standaardafwijking. Bij een verdubbeling van het aantal deeltjes neemt de standaardafwijking af van 0.167 naar 0.112. De drukwaarden liggen daardoor dichter bij de gemiddelde druk. Dit laat zien dat de relatieve veranderingen kleiner worden wanneer het aantal deeltjes toeneemt. 
+$\sigma \propto \frac{1}{\sqrt{N}}$.
+Voor een macroscopisch systeem met ongeveer $N = 10^{23}$
+deeltjes zijn de relatieve drukveranderingen daarom extreem klein:
+$\frac{\sigma}{P}\approx\frac{1}{\sqrt{10^{23}}}\approx 3 \times 10^{-12}$.
+Hieruit volgt dat de druk van een echt gas praktisch constant is en dat de statistische veranderingen niet meetbaar zijn in gewone experimenten.
 
 ```python
 
